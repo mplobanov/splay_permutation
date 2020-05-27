@@ -37,6 +37,9 @@ public:
         int decSuff = 0;
         int decPref = 0;
 
+        int leftest = 0;
+        int rightest = 0;
+
         explicit Node() = default;
         explicit Node(int val);
 
@@ -44,8 +47,6 @@ public:
 
         friend std::ostream & operator << (std::ostream & out, Tree::Node & node);
         std::string to_string();
-
-        Tree::Node* get_most(Direction direction);
 
         Direction _my_direction();
 
@@ -59,15 +60,18 @@ public:
 
 public:
 
+    Tree::Node* get_most(Tree::Node* node, Direction direction);
+
     Tree::Node* _root = nullptr;
 
     void _splay(Tree::Node* node);
 
-    Tree::Node *_get_most(Direction direction = Right) const; // return pointer to bi..,mggest(Big), smallest(Small) member of tree
+    Node * _get_most(Direction direction = Right); // return pointer to bi..,mggest(Big), smallest(Small) member of tree
 
     std::pair<Tree*, Tree*> split (int i); // i'th element and before in one tree, rest in another
 
     void merge(Tree &tree, Direction direction = Right); // Merges a bigger (Big) or smaller(Tree) to existing tree. Old tree is not valid after merge!
+    Tree::Node* _node_merge(Tree::Node* node1, Tree::Node* node2);
 
     Tree::Node* find(int i, Tree::Node* node = nullptr); // 1-numeration
 

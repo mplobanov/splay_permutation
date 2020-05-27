@@ -6,19 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/Users/mplobanov/CLionProjects/splay/output.cpp
-climits
--
-functional
--
+/Users/mplobanov/CLionProjects/splay/sol.cpp
 iostream
--
-cassert
 -
 vector
 -
-fstream
--
-algorithm
+functional
 -
 

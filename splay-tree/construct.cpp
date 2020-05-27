@@ -31,5 +31,5 @@ void Tree::destroy(Tree::Node *node) {
 }
 
 Tree::~Tree() {
-    destroy(_root);
+    //destroy(_root);
 }

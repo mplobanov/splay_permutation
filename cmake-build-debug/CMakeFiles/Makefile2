@@ -53,6 +53,8 @@ CMAKE_BINARY_DIR = /Users/mplobanov/CLionProjects/splay/cmake-build-debug
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
+all: CMakeFiles/sav.dir/all
+all: CMakeFiles/output.dir/all
 all: CMakeFiles/splay.dir/all
 
 .PHONY : all
@@ -63,9 +65,65 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
+clean: CMakeFiles/sav.dir/clean
+clean: CMakeFiles/output.dir/clean
 clean: CMakeFiles/splay.dir/clean
 
 .PHONY : clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/sav.dir
+
+# All Build rule for target.
+CMakeFiles/sav.dir/all:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/depend
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles --progress-num=3,4 "Built target sav"
+.PHONY : CMakeFiles/sav.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/sav.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/sav.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles 0
+.PHONY : CMakeFiles/sav.dir/rule
+
+# Convenience name for target.
+sav: CMakeFiles/sav.dir/rule
+
+.PHONY : sav
+
+# clean rule for target.
+CMakeFiles/sav.dir/clean:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/clean
+.PHONY : CMakeFiles/sav.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/output.dir
+
+# All Build rule for target.
+CMakeFiles/output.dir/all:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/depend
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target output"
+.PHONY : CMakeFiles/output.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/output.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/output.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles 0
+.PHONY : CMakeFiles/output.dir/rule
+
+# Convenience name for target.
+output: CMakeFiles/output.dir/rule
+
+.PHONY : output
+
+# clean rule for target.
+CMakeFiles/output.dir/clean:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/clean
+.PHONY : CMakeFiles/output.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/splay.dir
@@ -74,7 +132,7 @@ clean: CMakeFiles/splay.dir/clean
 CMakeFiles/splay.dir/all:
 	$(MAKE) -f CMakeFiles/splay.dir/build.make CMakeFiles/splay.dir/depend
 	$(MAKE) -f CMakeFiles/splay.dir/build.make CMakeFiles/splay.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9 "Built target splay"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/mplobanov/CLionProjects/splay/cmake-build-debug/CMakeFiles --progress-num=5,6,7,8,9,10,11,12,13 "Built target splay"
 .PHONY : CMakeFiles/splay.dir/all
 
 # Build rule for subdir invocation for target.

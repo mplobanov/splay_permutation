@@ -22,10 +22,17 @@ std::pair<Tree*, Tree*> Tree::split(int x) {
 
 
 void Tree::merge(Tree &tree, Direction direction) {
-    if (!tree._root)
+    if (!tree._root) {
+//        if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//            find(_root->_size / 2);
+//        }
         return;
+    }
     if (!_root) {
         _root = tree._root;
+//        if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//            find(_root->_size / 2);
+//        }
         return;
     }
     _root->_push();
@@ -42,4 +49,22 @@ void Tree::merge(Tree &tree, Direction direction) {
     else {
         _root = tree._root;
     }
+//    if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//        find(_root->_size / 2);
+//    }
 }
+
+Tree::Node* Tree::_node_merge(Tree::Node *node1, Tree::Node *node2) {
+    if (!node1)
+        return node2;
+    if (!node2)
+        return node1;
+    node1->_push();
+    node2->_push();
+    node1 = find(node1->_size, node1);
+    node1->_right = node2;
+    node1->_update();
+    return node1;
+}
+
+

@@ -11,6 +11,7 @@
 #include <cassert>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/Tree.h BEGINS HERE
@@ -39,8 +40,16 @@ public:
         int assign = 0;
         bool assigned = false;
         int delta = 0;
-        bool reversed;
+        bool reversed = false;
         void _push();
+
+        int incSuff = 0;
+        int incPref = 0;
+        int decSuff = 0;
+        int decPref = 0;
+
+        int leftest = 0;
+        int rightest = 0;
 
         explicit Node() = default;
         explicit Node(int val);
@@ -55,17 +64,20 @@ public:
     public:
         void _rotate(Direction direction);
         void _update();
+        void _update(int Tree::Node::* field, bool inc, bool suff);
         static Tree::Node* Tree::Node::* _get_child(Direction);
         int get_child_size(Direction direction);
     };
 
 public:
 
+    Tree::Node* get_most(Tree::Node* node, Direction direction);
+
     Tree::Node* _root = nullptr;
 
     void _splay(Tree::Node* node);
 
-    Tree::Node *_get_most(Direction direction = Right) const; // return pointer to bi..,mggest(Big), smallest(Small) member of tree
+    Node * _get_most(Direction direction = Right); // return pointer to bi..,mggest(Big), smallest(Small) member of tree
 
     std::pair<Tree*, Tree*> split (int i); // i'th element and before in one tree, rest in another
 
@@ -90,6 +102,11 @@ public:
     void assign(int l, int r, int x);
     void add_delta(int l, int r, int x);
     void reverse(int l, int r);
+    void permutation(int l, int r, bool next);
+    Node* find_big_sm(int x, bool big = true);
+    void _swap(Node* a, Node* b);
+
+
 
     explicit Tree() = default;
     ~Tree();
@@ -112,7 +129,13 @@ public:
 // Created by Михаил Лобанов on 25.05.2020.
 //
 
-Tree::Node::Node(int val) : _val(val) {}
+Tree::Node::Node(int val) : _val(val) {
+    incPref = 1;
+    incSuff = 1;
+    decPref = 1;
+    decSuff = 1;
+    _update();
+}
 
 Tree::Node::Node(Node *left, int val, Node *right) : _left(left), _val(val), _right(right) {
     _update();
@@ -245,18 +268,30 @@ void Tree::Node::_update() {
     _sum = _val;
     _push();
     _min = _val;
+    leftest = _val;
+    rightest = _val;
     if (_left){
         _left->_parent = this;
         _size += _left->_size;
         _sum += _left->_sum;
         _min = std::min(_min, _left->_min);
+        leftest = _left->leftest;
     }
     if (_right) {
         _right->_parent = this;
         _size += _right->_size;
         _sum += _right->_sum;
         _min = std::min(_min, _right->_min);
+        rightest = _right->rightest;
     }
+    incSuff = 0;
+    incPref = 0;
+    decSuff = 0;
+    decPref = 0;
+    _update(&Tree::Node::incSuff, true, true);
+    _update(&Tree::Node::incPref, true, false);
+    _update(&Tree::Node::decSuff, false, true);
+    _update(&Tree::Node::decPref, false, false);
 }
 
 Direction Tree::Node::_my_direction() {
@@ -294,39 +329,60 @@ Direction operator!(const Direction & direction) {
 
 void Tree::Node::_push() {
     Node* node = this;
-    if (node->reversed) {
-        std::swap(node->_left, node->_right);
-        if (node->_left) {
-            node->_left->reversed = !(node->_left->reversed);
+    if (reversed) {
+        std::swap(_left, _right);
+        std::swap(incSuff, decPref);
+        std::swap(decSuff, incPref);
+        std::swap(leftest, rightest);
+        if (_left) {
+            _left->reversed = !(_left->reversed);
         }
-        if (node->_right) {
-            node->_right->reversed = !(node->_right->reversed);
+        if (_right) {
+            _right->reversed = !(_right->reversed);
         }
-        node->reversed = false;
+        reversed = false;
     }
-    if (node->assigned) {
-        node->_val = node->assign;
-        node->_sum = node->_size * node->_val;
-        for(Direction dir : std::vector<Direction>({Left, Right})) {
-            Node* child = node->*(Tree::Node::_get_child(dir));
-            if (child) {
-                child->assigned = true;
-                child->assign = node->_val;
-                child->delta = 0;
-            }
+    if (assigned) {
+        _val = assign;
+        leftest = assign;
+        rightest = assign;
+        _sum = _size * _val;
+        incPref = _size;
+        decPref = _size;
+        incSuff = _size;
+        decSuff = _size;
+        Direction dir = Left;
+        Node* child = this->*(_get_child(dir));
+        if (child) {
+            child->assigned = true;
+            child->assign = _val;
+            child->delta = 0;
         }
-        node->assigned = false;
+        dir = Right;
+        child = this->*(_get_child(dir));
+        if (child) {
+            child->assigned = true;
+            child->assign = _val;
+            child->delta = 0;
+        }
+        assigned = false;
     }
-    if (node->delta != 0) {
-        node->_val += node->delta;
-        node->_sum += node->_size * node->delta;
-        for (Direction dir: std::vector<Direction>({Left, Right})) {
-            Node* child = node->*(Tree::Node::_get_child(dir));
-            if (child) {
-                child->delta += node->delta;
-            }
+    if (delta != 0) {
+        _val += delta;
+        leftest += delta;
+        rightest += delta;
+        _sum += _size * delta;
+        Direction dir = Left;
+        Node* child = this->*(_get_child(dir));
+        if (child) {
+            child->delta += delta;
         }
-        node->delta = 0;
+        dir = Right;
+        child = this->*(_get_child(dir));
+        if (child) {
+            child->delta += delta;
+        }
+        delta = 0;
     }
 }
 
@@ -348,6 +404,51 @@ void Tree::_make_changes(int l, int r, std::function<void(Tree *)> f) {
     a->merge_subsegments(b, c);
     _root = a->_root;
 }
+
+void Tree::Node::_update(int Node::*field, bool inc, bool suff) {
+    _push();
+    Node* child = suff ? _right : _left;
+    Node* other_child = suff ? _left : _right;
+    if ((!child) || (child->*field == child->_size)) {
+        if (child) {
+            int val = suff ? child->leftest : child->rightest;
+            if (!((inc ^ suff) ? (val <= _val) : (val >= _val))) {
+                this->*field = child->*field;
+                return;
+            }
+        }
+        this->*field = 1;
+        if (child)
+            this->*field += child->_size;
+
+        if (!other_child) {
+            return;
+        }
+        int val2 = suff ? other_child->rightest : other_child->leftest;
+        if ((inc ^ suff) ? (val2 >= _val) : (val2 <= _val)) {
+            this->*field += other_child->*field;
+        }
+    }
+    else {
+        this->*field = child->*field;
+    }
+}
+
+void Tree::_swap(Node *a, Node *b) {
+    _splay(a);
+    a->_right->_parent = nullptr;
+    a->_right = nullptr;
+    a->_update();
+    _splay(b);
+    Node* a_left = a->_left;
+    a->_left = b->_left;
+    a->_right = b->_right;
+    b->_left = a_left;
+    b->_right = a;
+    a->_update();
+    b->_update();
+    _root = b;
+}
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/utilitites.cpp ENDS HERE
 //----------------------------------------------------------------------------------------------------
@@ -359,17 +460,8 @@ void Tree::_make_changes(int l, int r, std::function<void(Tree *)> f) {
 // Created by Михаил Лобанов on 25.05.2020.
 //
 
-Tree::Node * Tree::_get_most(Direction direction) const {
-    Node* node = _root;
-    if (!node)
-        return node;
-    while (true) {
-        node->_push();
-        if (node->*(Tree::Node::_get_child(direction)))
-            node = node->*(Tree::Node::_get_child(direction));
-        else
-            return node;
-    }
+Tree::Node * Tree::_get_most(Direction direction) {
+    return get_most(_root, direction);
 }
 
 Tree::Node* Tree::find(int i, Tree::Node* node) {
@@ -391,6 +483,39 @@ Tree::Node* Tree::find(int i, Tree::Node* node) {
     _splay(node);
     return node;
 }
+
+
+
+Tree::Node * Tree::get_most(Tree::Node* node, Direction direction) {
+    if (!node)
+        return node;
+    while (true) {
+        node->_push();
+        if (node->*(Tree::Node::_get_child(direction)))
+            node = node->*(Tree::Node::_get_child(direction));
+        else {
+            _splay(node);
+            return node;
+        }
+
+    }
+}
+
+Tree::Node * Tree::find_big_sm(int x, bool big) {
+    Node* node = _root;
+    Node* ans = nullptr;
+    while (node) {
+        if (big ? (node->_val <= x) : (node->_val >= x)) {
+            node = node->_left;
+        }
+        else {
+            ans = node;
+            node = node->_right;
+        }
+    }
+    _splay(ans);
+    return ans;
+}
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/find.cpp ENDS HERE
 //----------------------------------------------------------------------------------------------------
@@ -406,7 +531,7 @@ std::pair<Tree*, Tree*> Tree::split(int x) {
     if (x == 0) {
         return {new Tree(), this};
     }
-    Node* splitter = find(x);
+    Node* splitter = find(x, _root);
     splitter->_push();
     Node* r_child = splitter->_right;
     if (splitter->_right ) {
@@ -414,15 +539,24 @@ std::pair<Tree*, Tree*> Tree::split(int x) {
         splitter->_right = nullptr;
     }
     splitter->_update();
+    _root = splitter;
     Tree* new_tree = new Tree(r_child);
     return {this, new_tree};
 }
 
+
 void Tree::merge(Tree &tree, Direction direction) {
-    if (!tree._root)
+    if (!tree._root) {
+//        if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//            find(_root->_size / 2);
+//        }
         return;
+    }
     if (!_root) {
         _root = tree._root;
+//        if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//            find(_root->_size / 2);
+//        }
         return;
     }
     _root->_push();
@@ -439,6 +573,9 @@ void Tree::merge(Tree &tree, Direction direction) {
     else {
         _root = tree._root;
     }
+//    if (abs(_root->get_child_size(Left) - _root->get_child_size(Right)) > 10) {
+//        find(_root->_size / 2);
+//    }
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -466,11 +603,12 @@ void Tree::push_back(int x) {
 }
 
 void Tree::pop(int i) {
-    assert(find(i));
-    Node* node = find(i);
+    assert(find(i, _root));
+    Node* node = find(i, _root);
     _splay(node);
     Tree* tr1 = new Tree(node->_left);
     Tree* tr2 = new Tree(node->_right);
+    delete node;
     tr1->merge(*tr2, Right);
     _root = tr1->_root;
 }
@@ -495,6 +633,28 @@ int Tree::sum_subsegment(int l, int r) {
     return sum;
 }
 
+void Tree::assign(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree *tree) {
+        tree->_root->assign = x;
+        tree->_root->assigned = true;
+        tree->_root->_push();
+    });
+}
+
+void Tree::add_delta(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree *tree) {
+        tree->_root->delta = x;
+        tree->_root->_push();
+    });
+}
+
+void Tree::reverse(int l, int r) {
+    _make_changes(l, r, [](Tree *tree) {
+        tree->_root->reversed = true;
+        tree->_root->_push();
+    });
+}
+
 int Tree::min_subsegment(int l, int r) {
     auto [a, b, c] = get_subsegemnt(l, r);
     int sum = b->_root->_min;
@@ -503,25 +663,22 @@ int Tree::min_subsegment(int l, int r) {
     return sum;
 }
 
-void Tree::assign(int l, int r, int x) {
-    _make_changes(l, r, [x](Tree* node) {
-        node->_root->assign = x;
-        node->_root->assigned = true;
-        node->_root->_push();
-    });
-}
 
-void Tree::add_delta(int l, int r, int x) {
-    _make_changes(l, r, [x](Tree* node) {
-        node->_root->delta = x;
-        node->_root->_push();
-    });
-}
-
-void Tree::reverse(int l, int r) {
-    _make_changes(l, r, [](Tree* node) {
-        node->_root->reversed = true;
-        node->_root->_push();
+void Tree::permutation(int l, int r, bool next) {
+    _make_changes(l, r, [next](Tree *tree) {
+        Node *node = tree->_root;
+        int pivot = node->_size - (next ? node->decSuff : node->incSuff);
+        if (!pivot) {
+            tree->reverse(1, node->_size);
+            return;
+        }
+        auto[a, b, c] = tree->get_subsegemnt(pivot, pivot);
+        Node *x = b->_root;
+        Node *y = c->find_big_sm(x->_val, next);
+        a->merge_subsegments(b, c);
+        tree->_root = a->_root;
+        tree->_swap(x, y);
+        tree->reverse(pivot + 1, tree->_root->_size);
     });
 }
 
@@ -539,23 +696,59 @@ using namespace std;
 using Nd = Tree::Node;
 
 int main() {
-    int n;
-    Tree tree;
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    long long n;
     cin >> n;
-    for (int i = 0; i < n; ++i) {
-        string s;
-        int a, b;
-        cin >> s >> a >> b;
-        if (s == "+") {
-            tree.insert_before(b, a + 1);
+    Tree tree;
+    for (long long i = 1; i < n + 1; ++i) {
+        long long x;
+        cin >> x;
+        tree.push_back(x);
+    }
+    long long q;
+    cin >> q;
+    long long type, x, l, r, pos;
+    for (long long k = 0; k < q; ++k) {
+        cin >> type;
+        if (type == 1) {
+            cin >> l >> r;
+            cout << tree.sum_subsegment(l + 1, r + 1) << "\n";
         }
-        if (s == "?") {
-            cout << tree.min_subsegment(a, b) << endl;
+        else if (type == 2) {
+            cin >> x >> pos;
+            tree.insert_before(x, pos + 1);
+        }
+        else if (type == 3) {
+            cin >> pos;
+            tree.pop(pos + 1);
+        }
+        else if (type == 4) {
+            cin >> x >> l >> r;
+            tree.assign(l + 1, r + 1, x);
+        }
+        else if (type == 5) {
+            cin >> x >> l >> r;
+            tree.add_delta(l + 1, r + 1, x);
+        }
+        else if ((type == 6) || (type == 7)) {
+            cin >> l >> r;
+            tree.permutation(l + 1, r + 1, (type == 6));
         }
     }
+    cout << tree << "\n";
+//    Tree tree;
+//    for(long long i = 0; i < 10010; ++i) {
+//        tree.push_back(i);
+//    }
+//    for (long long i = 0; i < 10000; ++i) {
+//        //tree.push_back(i);
+//        tree.pop(1);
+//    }
+    return 0;
 }
 
-//----------------------------------------------------------------------------------------------------
+//------------------------------÷----------------------------------------------------------------------
 // FILE main.cpp ENDS HERE
 //----------------------------------------------------------------------------------------------------
 

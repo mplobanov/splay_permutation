@@ -3,8 +3,8 @@
 //
 #include "Tree.h"
 
-Tree::Node * Tree::_get_most(Direction direction) const {
-    return _root->get_most(direction);
+Tree::Node * Tree::_get_most(Direction direction) {
+    return get_most(_root, direction);
 }
 
 Tree::Node* Tree::find(int i, Tree::Node* node) {
@@ -27,16 +27,43 @@ Tree::Node* Tree::find(int i, Tree::Node* node) {
     return node;
 }
 
-Tree::Node * Tree::Node::get_most(Direction direction) {
-    Node* node = this;
+//Tree::Node* Tree::find(int i, Tree::Node *node) {
+//    --i;
+//    if (!node) {
+//        return nullptr;
+//    }
+//    node->_push();
+//    Node* res;
+//    int cur_ind = node->get_child_size(Left);
+//    if (cur_ind == i) {
+//        res = node;
+//        _splay(node);
+//    }
+//    else if (i < cur_ind && node->_left) {
+//        res = find(i, node->_left);
+//    }
+//    else if (i > cur_ind && node->_right) {
+//        res = find(i - cur_ind - 1, node->_right);
+//    }
+//    else {
+//        res = node;
+//        _splay(node);
+//    }
+//    return res;
+//}
+
+Tree::Node * Tree::get_most(Tree::Node* node, Direction direction) {
     if (!node)
         return node;
     while (true) {
         node->_push();
         if (node->*(Tree::Node::_get_child(direction)))
             node = node->*(Tree::Node::_get_child(direction));
-        else
+        else {
+            _splay(node);
             return node;
+        }
+
     }
 }
 
@@ -52,5 +79,6 @@ Tree::Node * Tree::find_big_sm(int x, bool big) {
             node = node->_right;
         }
     }
+    _splay(ans);
     return ans;
 }

@@ -8,17 +8,21 @@ void Tree::Node::_update() {
     _sum = _val;
     _push();
     _min = _val;
+    leftest = _val;
+    rightest = _val;
     if (_left){
         _left->_parent = this;
         _size += _left->_size;
         _sum += _left->_sum;
         _min = std::min(_min, _left->_min);
+        leftest = _left->leftest;
     }
     if (_right) {
         _right->_parent = this;
         _size += _right->_size;
         _sum += _right->_sum;
         _min = std::min(_min, _right->_min);
+        rightest = _right->rightest;
     }
     incSuff = 0;
     incPref = 0;
@@ -69,6 +73,7 @@ void Tree::Node::_push() {
         std::swap(_left, _right);
         std::swap(incSuff, decPref);
         std::swap(decSuff, incPref);
+        std::swap(leftest, rightest);
         if (_left) {
             _left->reversed = !(_left->reversed);
         }
@@ -79,29 +84,43 @@ void Tree::Node::_push() {
     }
     if (assigned) {
         _val = assign;
+        leftest = assign;
+        rightest = assign;
         _sum = _size * _val;
         incPref = _size;
         decPref = _size;
         incSuff = _size;
         decSuff = _size;
-        for(Direction dir : std::vector<Direction>({Left, Right})) {
-            Node* child = this->*(_get_child(dir));
-            if (child) {
-                child->assigned = true;
-                child->assign = _val;
-                child->delta = 0;
-            }
+        Direction dir = Left;
+        Node* child = this->*(_get_child(dir));
+        if (child) {
+            child->assigned = true;
+            child->assign = _val;
+            child->delta = 0;
+        }
+        dir = Right;
+        child = this->*(_get_child(dir));
+        if (child) {
+            child->assigned = true;
+            child->assign = _val;
+            child->delta = 0;
         }
         assigned = false;
     }
     if (delta != 0) {
         _val += delta;
+        leftest += delta;
+        rightest += delta;
         _sum += _size * delta;
-        for (Direction dir: std::vector<Direction>({Left, Right})) {
-            Node* child = this->*(_get_child(dir));
-            if (child) {
-                child->delta += delta;
-            }
+        Direction dir = Left;
+        Node* child = this->*(_get_child(dir));
+        if (child) {
+            child->delta += delta;
+        }
+        dir = Right;
+        child = this->*(_get_child(dir));
+        if (child) {
+            child->delta += delta;
         }
         delta = 0;
     }
@@ -132,7 +151,7 @@ void Tree::Node::_update(int Node::*field, bool inc, bool suff) {
     Node* other_child = suff ? _left : _right;
     if ((!child) || (child->*field == child->_size)) {
         if (child) {
-            int val = suff ? child->get_most(Left)->_val : child->get_most(Right)->_val;
+            int val = suff ? child->leftest : child->rightest;
             if (!((inc ^ suff) ? (val <= _val) : (val >= _val))) {
                 this->*field = child->*field;
                 return;
@@ -145,7 +164,7 @@ void Tree::Node::_update(int Node::*field, bool inc, bool suff) {
         if (!other_child) {
             return;
         }
-        int val2 = suff ? other_child->get_most(Right)->_val : other_child->get_most(Left)->_val;
+        int val2 = suff ? other_child->rightest : other_child->leftest;
         if ((inc ^ suff) ? (val2 >= _val) : (val2 <= _val)) {
             this->*field += other_child->*field;
         }

@@ -17,11 +17,12 @@ void Tree::push_back(int x) {
 }
 
 void Tree::pop(int i) {
-    assert(find(i));
-    Node* node = find(i);
+    assert(find(i, _root));
+    Node* node = find(i, _root);
     _splay(node);
     Tree* tr1 = new Tree(node->_left);
     Tree* tr2 = new Tree(node->_right);
+    delete node;
     tr1->merge(*tr2, Right);
     _root = tr1->_root;
 }

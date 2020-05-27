@@ -111,6 +111,32 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named sav
+
+# Build rule for target.
+sav: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 sav
+.PHONY : sav
+
+# fast build rule for target.
+sav/fast:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/build
+.PHONY : sav/fast
+
+#=============================================================================
+# Target rules for targets named output
+
+# Build rule for target.
+output: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 output
+.PHONY : output
+
+# fast build rule for target.
+output/fast:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/build
+.PHONY : output/fast
+
+#=============================================================================
 # Target rules for targets named splay
 
 # Build rule for target.
@@ -149,6 +175,60 @@ main.s: main.cpp.s
 main.cpp.s:
 	$(MAKE) -f CMakeFiles/splay.dir/build.make CMakeFiles/splay.dir/main.cpp.s
 .PHONY : main.cpp.s
+
+output.o: output.cpp.o
+
+.PHONY : output.o
+
+# target to build an object file
+output.cpp.o:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/output.cpp.o
+.PHONY : output.cpp.o
+
+output.i: output.cpp.i
+
+.PHONY : output.i
+
+# target to preprocess a source file
+output.cpp.i:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/output.cpp.i
+.PHONY : output.cpp.i
+
+output.s: output.cpp.s
+
+.PHONY : output.s
+
+# target to generate assembly for a file
+output.cpp.s:
+	$(MAKE) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/output.cpp.s
+.PHONY : output.cpp.s
+
+sol.o: sol.cpp.o
+
+.PHONY : sol.o
+
+# target to build an object file
+sol.cpp.o:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/sol.cpp.o
+.PHONY : sol.cpp.o
+
+sol.i: sol.cpp.i
+
+.PHONY : sol.i
+
+# target to preprocess a source file
+sol.cpp.i:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/sol.cpp.i
+.PHONY : sol.cpp.i
+
+sol.s: sol.cpp.s
+
+.PHONY : sol.s
+
+# target to generate assembly for a file
+sol.cpp.s:
+	$(MAKE) -f CMakeFiles/sav.dir/build.make CMakeFiles/sav.dir/sol.cpp.s
+.PHONY : sol.cpp.s
 
 splay-tree/basic_operations.o: splay-tree/basic_operations.cpp.o
 
@@ -347,10 +427,18 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
+	@echo "... sav"
+	@echo "... output"
 	@echo "... splay"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... output.o"
+	@echo "... output.i"
+	@echo "... output.s"
+	@echo "... sol.o"
+	@echo "... sol.i"
+	@echo "... sol.s"
 	@echo "... splay-tree/basic_operations.o"
 	@echo "... splay-tree/basic_operations.i"
 	@echo "... splay-tree/basic_operations.s"

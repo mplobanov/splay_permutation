@@ -16,4 +16,5 @@ add_executable(splay
         splay-tree/basic_operations.cpp
         splay-tree/operations.cpp
         )
-#add_executable(output output.cpp)
+add_executable(output output.cpp)
+add_executable(sav sol.cpp)
