@@ -1,3 +1,4 @@
+
 //
 // Created by Михаил Лобанов on 25.05.2020.
 //
@@ -6,7 +7,7 @@
 Tree::Node::Node(int val) : _val(val) {}
 
 Tree::Node::Node(Node *left, int val, Node *right) : _left(left), _val(val), _right(right) {
-    _make_me_parent();
+    _update();
 }
 
 Tree::Tree(Node * node) : _root(node) {

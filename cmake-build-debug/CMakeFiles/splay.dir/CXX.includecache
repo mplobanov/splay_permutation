@@ -6,13 +6,21 @@
 
 #IncludeRegexTransform: 
 
+/Users/mplobanov/CLionProjects/splay/main.cpp
+fstream
+-
+splay-tree/Tree.h
 /Users/mplobanov/CLionProjects/splay/splay-tree/Tree.h
+
+/Users/mplobanov/CLionProjects/splay/splay-tree/Tree.h
+climits
+-
+functional
+-
 iostream
 -
 cassert
 -
-
-/Users/mplobanov/CLionProjects/splay/splay-tree/find.cpp
-Tree.h
-/Users/mplobanov/CLionProjects/splay/splay-tree/Tree.h
+vector
+-
 

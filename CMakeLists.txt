@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 14)
 add_executable(splay
         main.cpp
         splay-tree/Tree.h
+        #splay-tree/DataPiece.h
+        #splay-tree/NodeData.h
         splay-tree/construct.cpp
         splay-tree/std_in_out.cpp
         splay-tree/splay.cpp

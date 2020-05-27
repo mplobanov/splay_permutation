@@ -5,8 +5,11 @@
 
 
 
+#include <climits>
+#include <functional>
 #include <iostream>
 #include <cassert>
+#include <vector>
 #include <fstream>
 
 //----------------------------------------------------------------------------------------------------
@@ -19,43 +22,39 @@
 
 
 enum Direction {Left, Right, Root};
-enum Most {Big, Small};
 
-auto inv_dir = [](Direction direction) {
-    return direction == Left ? Right : Left;
-};
-
-auto most_to_direction = [](Most most) {
-    return most == Small ? Left : Right;
-};
+Direction operator!(const Direction & direction);
 
 class Tree {
 public:
     struct Node {
-        // fields
-        int _val;
+        int _val = 0;
         int _size = 1;
         Tree::Node* _left = nullptr;
         Tree::Node* _right = nullptr;
         Tree::Node* _parent = nullptr;
 
-        // constructors-destructors
+        int _sum = 0;
+        int _min = 0;
+        int assign = 0;
+        bool assigned = false;
+        int delta = 0;
+        bool reversed;
+        void _push();
+
         explicit Node() = default;
         explicit Node(int val);
+
         Node(Tree::Node* left, int val, Tree::Node* right);
 
+        friend std::ostream & operator << (std::ostream & out, Tree::Node & node);
+        std::string to_string();
 
-        //std in & out
-        friend std::ostream & operator << (std::ostream & out, const Tree::Node & node);
-//      std::string to_string(const std::string & s = "") const;
-        std::string to_string() const;
-
-        // utilties
         Direction _my_direction();
 
     public:
         void _rotate(Direction direction);
-        void _make_me_parent();
+        void _update();
         static Tree::Node* Tree::Node::* _get_child(Direction);
         int get_child_size(Direction direction);
     };
@@ -63,41 +62,43 @@ public:
 public:
 
     Tree::Node* _root = nullptr;
-    //Tree::Node* min_node = nullptr;
-    //Tree::Node* max_node = nullptr;
 
-    void _splay(Tree::Node* node); // node MUST be valid (nullptr not suitable)
+    void _splay(Tree::Node* node);
 
-//  Tree::Node* _lower_bound(Tree::Node* node, int x); // returns biggest member <= x, if there is no such member, returns nullptr
+    Tree::Node *_get_most(Direction direction = Right) const; // return pointer to bi..,mggest(Big), smallest(Small) member of tree
 
-    Tree::Node* _get_most(Most most); // return pointer to bi..,mggest(Big), smallest(Small) member of tree
+    std::pair<Tree*, Tree*> split (int i); // i'th element and before in one tree, rest in another
 
-    std::pair<Tree*, Tree*> split (int x); // splits tree. After splitting initial tree is NOT VALID any more!
+    void merge(Tree &tree, Direction direction = Right); // Merges a bigger (Big) or smaller(Tree) to existing tree. Old tree is not valid after merge!
 
-    void merge(Most most, Tree & tree); // Merges a bigger (Big) or smaller(Tree) to existing tree. Old tree is not valid after merge!
-
-    Tree::Node* _get_k(Tree::Node* node, int k); // 1-numeration
+    Tree::Node* find(int i, Tree::Node* node = nullptr); // 1-numeration
 
     explicit Tree(Tree::Node*);
-public:
-    Tree::Node* find(int x);
-//    Tree::Node* lower_bound(int x);
 
-    int size();
-    void add(int x);
-    void remove(int x);
-    int get_k_min(int k);
-    int get_k_max(int k);
+    std::tuple<Tree*, Tree*, Tree*> get_subsegemnt(int l, int r);
+    void merge_subsegments(Tree* n2, Tree* n3);
+
+    void _make_changes(int l, int r, std::function<void(Tree*)>);
+
+public:
+    int size() const;
+    void push_back(int x);
+    void pop(int x);
+    void insert_before(int x, int i);
+    int sum_subsegment(int l, int r);
+    int min_subsegment(int l, int r);
+    void assign(int l, int r, int x);
+    void add_delta(int l, int r, int x);
+    void reverse(int l, int r);
 
     explicit Tree() = default;
-
     ~Tree();
     void destroy(Tree::Node* node);
 
     friend std::ostream & operator << (std::ostream & out, const Tree & tree);
-
-    void move_to_start(int i, int j);
 };
+
+
 
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/Tree.h ENDS HERE
@@ -106,6 +107,7 @@ public:
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/construct.cpp BEGINS HERE
 //----------------------------------------------------------------------------------------------------
+
 //
 // Created by Михаил Лобанов on 25.05.2020.
 //
@@ -113,7 +115,7 @@ public:
 Tree::Node::Node(int val) : _val(val) {}
 
 Tree::Node::Node(Node *left, int val, Node *right) : _left(left), _val(val), _right(right) {
-    _make_me_parent();
+    _update();
 }
 
 Tree::Tree(Node * node) : _root(node) {
@@ -146,28 +148,15 @@ Tree::~Tree() {
 //
 
 
-std::ostream & operator<<(std::ostream &out, const Tree::Node & node) {
+std::ostream & operator<<(std::ostream &out, Tree::Node & node) {
     std::string s = node.to_string();
     out << s.substr(1, s.length() - 1);
     return out;
 }
 
-//std::string Tree::Node::to_string(const std::string & tabs) const {
-//    std::string s;
-//    s += tabs + std::to_string(_val) + " (sz" + std::to_string(_size) + ")\n";
-//    if (_left) {
-//        s += tabs + "left\n";
-//        s += _left->to_string(tabs + "\t");
-//    }
-//    if (_right) {
-//        s += tabs + "right\n";
-//        s += _right->to_string(tabs + "\t");
-//    }
-//    return s;
-//}
-
-std::string Tree::Node::to_string() const {
+std::string Tree::Node::to_string() {
     std::string ans;
+    _push();
     if (_left)
         ans += _left->to_string();
     ans += " " + std::to_string(_val);
@@ -178,10 +167,11 @@ std::string Tree::Node::to_string() const {
 
 std::ostream & operator<<(std::ostream &out, const Tree & tree) {
     if (tree._root) {
-        out << *tree._root;
+        std::string s = tree._root->to_string();
+        out << s.substr(1, s.length() - 1);
     }
     else {
-        out << "Empty tree (sz 0)\n";
+        out << "Empty tree (sz 0)";
     }
     return out;
 }
@@ -201,20 +191,26 @@ Tree::Node* Tree::Node::* Tree::Node::_get_child(Direction direction) {
 }
 
 void Tree::Node::_rotate(Direction direction) {
-    auto w_d = inv_dir(direction); // working direction
+    auto w_d = !direction; // working direction
     assert(this->*_get_child(w_d));
     Node* son = this->*_get_child(w_d);
-    Node* grandson = son->*(son->_get_child(inv_dir(w_d)));
+    Node* grandson = son->*(son->_get_child(!w_d));
     Node* dad = _parent;
-    son->*_get_child(inv_dir(w_d)) = this;
+    if (dad)
+        dad->_push();
+    _push();
+    son->_push();
+    if (grandson)
+        grandson->_push();
+    son->*_get_child(!w_d) = this;
     this->*_get_child(w_d) = grandson;
     if (dad) {
         dad->*dad->_get_child(this->_my_direction()) = son;
     }
-    _make_me_parent();
-    son->_make_me_parent();
+    _update();
+    son->_update();
     if (dad) {
-        dad->_make_me_parent();
+        dad->_update();
     }
     else {
         son->_parent = nullptr;
@@ -244,15 +240,22 @@ void Tree::_splay(Node *node) {
 // Created by Михаил Лобанов on 25.05.2020.
 //
 
-void Tree::Node::_make_me_parent() {
+void Tree::Node::_update() {
     _size = 1;
+    _sum = _val;
+    _push();
+    _min = _val;
     if (_left){
         _left->_parent = this;
         _size += _left->_size;
+        _sum += _left->_sum;
+        _min = std::min(_min, _left->_min);
     }
     if (_right) {
         _right->_parent = this;
         _size += _right->_size;
+        _sum += _right->_sum;
+        _min = std::min(_min, _right->_min);
     }
 }
 
@@ -266,20 +269,85 @@ Direction Tree::Node::_my_direction() {
 }
 
 int Tree::Node::get_child_size(Direction direction) {
-    if (this->*_get_child(direction)) {
-        return (this->*_get_child(direction))->_size;
+    if (this->*(_get_child(direction))) {
+        return (this->*(_get_child(direction)))->_size;
     }
     else {
         return 0;
     }
 }
 
-int Tree::size() {
+int Tree::size() const {
     if (_root)
         return _root->_size;
     return 0;
 }
 
+Direction operator!(const Direction & direction) {
+    if (direction == Root)
+        return Root;
+    if (direction == Left)
+        return Right;
+    else
+        return Left;
+}
+
+void Tree::Node::_push() {
+    Node* node = this;
+    if (node->reversed) {
+        std::swap(node->_left, node->_right);
+        if (node->_left) {
+            node->_left->reversed = !(node->_left->reversed);
+        }
+        if (node->_right) {
+            node->_right->reversed = !(node->_right->reversed);
+        }
+        node->reversed = false;
+    }
+    if (node->assigned) {
+        node->_val = node->assign;
+        node->_sum = node->_size * node->_val;
+        for(Direction dir : std::vector<Direction>({Left, Right})) {
+            Node* child = node->*(Tree::Node::_get_child(dir));
+            if (child) {
+                child->assigned = true;
+                child->assign = node->_val;
+                child->delta = 0;
+            }
+        }
+        node->assigned = false;
+    }
+    if (node->delta != 0) {
+        node->_val += node->delta;
+        node->_sum += node->_size * node->delta;
+        for (Direction dir: std::vector<Direction>({Left, Right})) {
+            Node* child = node->*(Tree::Node::_get_child(dir));
+            if (child) {
+                child->delta += node->delta;
+            }
+        }
+        node->delta = 0;
+    }
+}
+
+std::tuple<Tree *, Tree *, Tree *> Tree::get_subsegemnt(int l, int r) {
+    auto [tr1, tr2] = split(l - 1);
+    auto [tr2_1, tr2_2] = tr2->split(r - l + 1);
+    return {tr1, tr2_1, tr2_2};
+}
+
+void Tree::merge_subsegments(Tree *n2, Tree *n3) {
+    Tree* n1 = this;
+    n1->merge(*n2);
+    n1->merge(*n3);
+}
+
+void Tree::_make_changes(int l, int r, std::function<void(Tree *)> f) {
+    auto [a, b, c] = get_subsegemnt(l, r);
+    f(b);
+    a->merge_subsegments(b, c);
+    _root = a->_root;
+}
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/utilitites.cpp ENDS HERE
 //----------------------------------------------------------------------------------------------------
@@ -291,74 +359,38 @@ int Tree::size() {
 // Created by Михаил Лобанов on 25.05.2020.
 //
 
-Tree::Node* Tree::find(int x) {
+Tree::Node * Tree::_get_most(Direction direction) const {
     Node* node = _root;
-    return _get_k(node, x);
-}
-
-Tree::Node * Tree::_get_most(Most most) {
-//    if (_root) {
-//        return most == Big ? max_node : min_node;
-//    }
-    Node* node = _root;
-    while (node->*(node->_get_child(most_to_direction(most)))) {
-        node = node->*(node->_get_child(most_to_direction(most)));
+    if (!node)
+        return node;
+    while (true) {
+        node->_push();
+        if (node->*(Tree::Node::_get_child(direction)))
+            node = node->*(Tree::Node::_get_child(direction));
+        else
+            return node;
     }
-    return node;
-    return nullptr;
 }
 
-Tree::Node* Tree::_get_k(Tree::Node *node, int k) {
-    assert(node->_size >= k);
-    while (k != node->get_child_size(Left) + 1) {
-        if (k < node->get_child_size(Left) + 1) {
+Tree::Node* Tree::find(int i, Tree::Node* node) {
+    if (node == nullptr) {
+        node = _root;
+    }
+    assert(node->_size >= i);
+    node->_push();
+    while (i != node->get_child_size(Left) + 1) {
+        if (i < node->get_child_size(Left) + 1) {
             node = node->_left;
         }
         else {
-            k -= node->get_child_size(Left) + 1;
+            i -= node->get_child_size(Left) + 1;
             node = node->_right;
         }
+        node->_push();
     }
     _splay(node);
     return node;
 }
-
-//int Tree::get_k_min(int k) {
-//    k--;
-//    assert(_root->_size > k);
-//    return _get_k(_root, k);
-//}
-
-//int Tree::get_k_max(int k) {
-//    return get_k_min(_root->_size - (k - 1));
-//}
-
-//Tree::Node * Tree::lower_bound(int x) {
-//    if (find(x)) {
-//        return find(x);
-//    }
-//    Node* ans =  _lower_bound(_root, x);
-//    if (ans) {
-//        _splay(ans);
-//    }
-//    return ans;
-//}
-
-//Tree::Node * Tree::_lower_bound(Node * node, int x) {
-//    if (node == nullptr)
-//        return nullptr;
-//    if (node->_val > x) {
-//        return _lower_bound(node->_left, x);
-//    }
-//    else {
-//        Node* ans = _lower_bound(node->_right, x);
-//        if (ans) {
-//            return ans;
-//        }
-//        return node;
-//    }
-//}
-
 //----------------------------------------------------------------------------------------------------
 // FILE splay-tree/find.cpp ENDS HERE
 //----------------------------------------------------------------------------------------------------
@@ -375,40 +407,34 @@ std::pair<Tree*, Tree*> Tree::split(int x) {
         return {new Tree(), this};
     }
     Node* splitter = find(x);
+    splitter->_push();
     Node* r_child = splitter->_right;
     if (splitter->_right ) {
         splitter->_right->_parent = nullptr;
         splitter->_right = nullptr;
     }
-    splitter->_make_me_parent();
+    splitter->_update();
     Tree* new_tree = new Tree(r_child);
-//    if (new_tree->_root) {
-//        new_tree->max_node = max_node;
-//        Node * node = new_tree->_root;
-//        while (node->_left)
-//            node = node->_left;
-//        new_tree->min_node = node;
-//    }
-//    max_node = _root;
     return {this, new_tree};
 }
 
-void Tree::merge(Most most, Tree &tree) {
-    Node* node = _get_most(most);
+void Tree::merge(Tree &tree, Direction direction) {
+    if (!tree._root)
+        return;
+    if (!_root) {
+        _root = tree._root;
+        return;
+    }
+    _root->_push();
+    if (tree._root)
+        tree._root->_push();
+    Node* node = _get_most(direction);
     if (node) {
         _splay(node);
-        Node* & child = _root->*Tree::Node::_get_child(most_to_direction(most));
+        Node* & child = _root->*Tree::Node::_get_child(direction);
         assert(child == nullptr);
         child = tree._root;
-        _root->_make_me_parent();
-//        if (tree._root) {
-//            if (most == Big) {
-//                max_node = tree.max_node;
-//            }
-//            else {
-//                min_node = tree.min_node;
-//            }
-//        }
+        _root->_update();
     }
     else {
         _root = tree._root;
@@ -426,42 +452,79 @@ void Tree::merge(Most most, Tree &tree) {
 // Created by Михаил Лобанов on 25.05.2020.
 //
 
-void Tree::move_to_start(int i, int j) {
-    if (i == 1)
-        return;
-    int before = i - 1;
-    int amount = j - i + 1;
-    auto trs1 = split(before);
-    auto trs2 = trs1.second->split(amount);
-    trs2.first->merge(Big, *trs1.first);
-    trs2.first->merge(Big, *trs2.second);
-    _root = trs2.first->_root;
-}
-
-void Tree::add(int x) {
+void Tree::push_back(int x) {
     if (!_root) {
         _root = new Node(x);
-//        max_node = _root;
-//        min_node = _root;
         return;
     }
-    Node* max_node = _get_most(Big);
+    Node* max_node = _get_most(Right);
     _splay(max_node);
     max_node->_right = new Node(x);
-    max_node->_make_me_parent();
+    max_node->_update();
     max_node = max_node->_right;
-    max_node->_make_me_parent();
+    max_node->_update();
 }
 
-void Tree::remove(int x) {
-    assert(find(x));
-    Node* node = find(x);
+void Tree::pop(int i) {
+    assert(find(i));
+    Node* node = find(i);
     _splay(node);
     Tree* tr1 = new Tree(node->_left);
     Tree* tr2 = new Tree(node->_right);
-    tr1->merge(Big, *tr2);
+    tr1->merge(*tr2, Right);
     _root = tr1->_root;
 }
+
+void Tree::insert_before(int x, int i) {
+    if (i > size()) {
+        push_back(x);
+        return;
+    }
+    auto trs = split(i - 1);
+    Tree* new_tree = new Tree(new Node(x));
+    trs.first->merge(*new_tree);
+    trs.first->merge(*trs.second);
+    _root = trs.first->_root;
+}
+
+int Tree::sum_subsegment(int l, int r) {
+    auto [a, b, c] = get_subsegemnt(l, r);
+    int sum = b->_root->_sum;
+    a->merge_subsegments(b, c);
+    _root = a->_root;
+    return sum;
+}
+
+int Tree::min_subsegment(int l, int r) {
+    auto [a, b, c] = get_subsegemnt(l, r);
+    int sum = b->_root->_min;
+    a->merge_subsegments(b, c);
+    _root = a->_root;
+    return sum;
+}
+
+void Tree::assign(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree* node) {
+        node->_root->assign = x;
+        node->_root->assigned = true;
+        node->_root->_push();
+    });
+}
+
+void Tree::add_delta(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree* node) {
+        node->_root->delta = x;
+        node->_root->_push();
+    });
+}
+
+void Tree::reverse(int l, int r) {
+    _make_changes(l, r, [](Tree* node) {
+        node->_root->reversed = true;
+        node->_root->_push();
+    });
+}
+
 
 
 //----------------------------------------------------------------------------------------------------
@@ -475,30 +538,21 @@ void Tree::remove(int x) {
 using namespace std;
 using Nd = Tree::Node;
 
-
 int main() {
-    //ios_base::sync_with_stdio(false);
-    //cin.tie(NULL);
-    //ifstream fin("../test.txt");
-    ifstream fin("g.in");
-    ofstream fout("g.out");
-    int n, m;
-    fin >> n >> m;
+    int n;
     Tree tree;
+    cin >> n;
     for (int i = 0; i < n; ++i) {
-        tree.add(i + 1);
+        string s;
+        int a, b;
+        cin >> s >> a >> b;
+        if (s == "+") {
+            tree.insert_before(b, a + 1);
+        }
+        if (s == "?") {
+            cout << tree.min_subsegment(a, b) << endl;
+        }
     }
-    tree.find(n / 2);
-    for (int j = 0; j < m; ++j) {
-        int x, y;
-        fin >> x >> y;
-        tree.move_to_start(x, y);
-        tree.find(n / 2);
-    }
-    fout << tree;
-    fin.close();
-    fout.close();
-    return 0;
 }
 
 //----------------------------------------------------------------------------------------------------
