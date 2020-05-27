@@ -46,6 +46,28 @@ int Tree::sum_subsegment(int l, int r) {
     return sum;
 }
 
+void Tree::assign(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree *tree) {
+        tree->_root->assign = x;
+        tree->_root->assigned = true;
+        tree->_root->_push();
+    });
+}
+
+void Tree::add_delta(int l, int r, int x) {
+    _make_changes(l, r, [x](Tree *tree) {
+        tree->_root->delta = x;
+        tree->_root->_push();
+    });
+}
+
+void Tree::reverse(int l, int r) {
+    _make_changes(l, r, [](Tree *tree) {
+        tree->_root->reversed = true;
+        tree->_root->_push();
+    });
+}
+
 int Tree::min_subsegment(int l, int r) {
     auto [a, b, c] = get_subsegemnt(l, r);
     int sum = b->_root->_min;
@@ -54,25 +76,22 @@ int Tree::min_subsegment(int l, int r) {
     return sum;
 }
 
-void Tree::assign(int l, int r, int x) {
-    _make_changes(l, r, [x](Tree* node) {
-        node->_root->assign = x;
-        node->_root->assigned = true;
-        node->_root->_push();
-    });
-}
 
-void Tree::add_delta(int l, int r, int x) {
-    _make_changes(l, r, [x](Tree* node) {
-        node->_root->delta = x;
-        node->_root->_push();
-    });
-}
-
-void Tree::reverse(int l, int r) {
-    _make_changes(l, r, [](Tree* node) {
-        node->_root->reversed = true;
-        node->_root->_push();
+void Tree::permutation(int l, int r, bool next) {
+    _make_changes(l, r, [next](Tree *tree) {
+        Node *node = tree->_root;
+        int pivot = node->_size - (next ? node->decSuff : node->incSuff);
+        if (!pivot) {
+            tree->reverse(1, node->_size);
+            return;
+        }
+        auto[a, b, c] = tree->get_subsegemnt(pivot, pivot);
+        Node *x = b->_root;
+        Node *y = c->find_big_sm(x->_val, next);
+        a->merge_subsegments(b, c);
+        tree->_root = a->_root;
+        tree->_swap(x, y);
+        tree->reverse(pivot + 1, tree->_root->_size);
     });
 }
 

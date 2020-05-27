@@ -15,9 +15,11 @@ std::pair<Tree*, Tree*> Tree::split(int x) {
         splitter->_right = nullptr;
     }
     splitter->_update();
+    _root = splitter;
     Tree* new_tree = new Tree(r_child);
     return {this, new_tree};
 }
+
 
 void Tree::merge(Tree &tree, Direction direction) {
     if (!tree._root)

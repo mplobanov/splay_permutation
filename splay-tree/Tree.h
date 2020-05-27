@@ -29,8 +29,13 @@ public:
         int assign = 0;
         bool assigned = false;
         int delta = 0;
-        bool reversed;
+        bool reversed = false;
         void _push();
+
+        int incSuff = 0;
+        int incPref = 0;
+        int decSuff = 0;
+        int decPref = 0;
 
         explicit Node() = default;
         explicit Node(int val);
@@ -40,11 +45,14 @@ public:
         friend std::ostream & operator << (std::ostream & out, Tree::Node & node);
         std::string to_string();
 
+        Tree::Node* get_most(Direction direction);
+
         Direction _my_direction();
 
     public:
         void _rotate(Direction direction);
         void _update();
+        void _update(int Tree::Node::* field, bool inc, bool suff);
         static Tree::Node* Tree::Node::* _get_child(Direction);
         int get_child_size(Direction direction);
     };
@@ -68,7 +76,7 @@ public:
     std::tuple<Tree*, Tree*, Tree*> get_subsegemnt(int l, int r);
     void merge_subsegments(Tree* n2, Tree* n3);
 
-    void _make_changes(int l, int r, std::function<void(Tree*)>);
+    void _make_changes(int l, int r, std::function<void(Tree *)> tree);
 
 public:
     int size() const;
@@ -80,6 +88,11 @@ public:
     void assign(int l, int r, int x);
     void add_delta(int l, int r, int x);
     void reverse(int l, int r);
+    void permutation(int l, int r, bool next);
+    Node* find_big_sm(int x, bool big = true);
+    void _swap(Node* a, Node* b);
+
+
 
     explicit Tree() = default;
     ~Tree();

@@ -20,6 +20,14 @@ void Tree::Node::_update() {
         _sum += _right->_sum;
         _min = std::min(_min, _right->_min);
     }
+    incSuff = 0;
+    incPref = 0;
+    decSuff = 0;
+    decPref = 0;
+    _update(&Tree::Node::incSuff, true, true);
+    _update(&Tree::Node::incPref, true, false);
+    _update(&Tree::Node::decSuff, false, true);
+    _update(&Tree::Node::decPref, false, false);
 }
 
 Direction Tree::Node::_my_direction() {
@@ -57,39 +65,45 @@ Direction operator!(const Direction & direction) {
 
 void Tree::Node::_push() {
     Node* node = this;
-    if (node->reversed) {
-        std::swap(node->_left, node->_right);
-        if (node->_left) {
-            node->_left->reversed = !(node->_left->reversed);
+    if (reversed) {
+        std::swap(_left, _right);
+        std::swap(incSuff, decPref);
+        std::swap(decSuff, incPref);
+        if (_left) {
+            _left->reversed = !(_left->reversed);
         }
-        if (node->_right) {
-            node->_right->reversed = !(node->_right->reversed);
+        if (_right) {
+            _right->reversed = !(_right->reversed);
         }
-        node->reversed = false;
+        reversed = false;
     }
-    if (node->assigned) {
-        node->_val = node->assign;
-        node->_sum = node->_size * node->_val;
+    if (assigned) {
+        _val = assign;
+        _sum = _size * _val;
+        incPref = _size;
+        decPref = _size;
+        incSuff = _size;
+        decSuff = _size;
         for(Direction dir : std::vector<Direction>({Left, Right})) {
-            Node* child = node->*(Tree::Node::_get_child(dir));
+            Node* child = this->*(_get_child(dir));
             if (child) {
                 child->assigned = true;
-                child->assign = node->_val;
+                child->assign = _val;
                 child->delta = 0;
             }
         }
-        node->assigned = false;
+        assigned = false;
     }
-    if (node->delta != 0) {
-        node->_val += node->delta;
-        node->_sum += node->_size * node->delta;
+    if (delta != 0) {
+        _val += delta;
+        _sum += _size * delta;
         for (Direction dir: std::vector<Direction>({Left, Right})) {
-            Node* child = node->*(Tree::Node::_get_child(dir));
+            Node* child = this->*(_get_child(dir));
             if (child) {
-                child->delta += node->delta;
+                child->delta += delta;
             }
         }
-        node->delta = 0;
+        delta = 0;
     }
 }
 
@@ -110,4 +124,49 @@ void Tree::_make_changes(int l, int r, std::function<void(Tree *)> f) {
     f(b);
     a->merge_subsegments(b, c);
     _root = a->_root;
+}
+
+void Tree::Node::_update(int Node::*field, bool inc, bool suff) {
+    _push();
+    Node* child = suff ? _right : _left;
+    Node* other_child = suff ? _left : _right;
+    if ((!child) || (child->*field == child->_size)) {
+        if (child) {
+            int val = suff ? child->get_most(Left)->_val : child->get_most(Right)->_val;
+            if (!((inc ^ suff) ? (val <= _val) : (val >= _val))) {
+                this->*field = child->*field;
+                return;
+            }
+        }
+        this->*field = 1;
+        if (child)
+            this->*field += child->_size;
+
+        if (!other_child) {
+            return;
+        }
+        int val2 = suff ? other_child->get_most(Right)->_val : other_child->get_most(Left)->_val;
+        if ((inc ^ suff) ? (val2 >= _val) : (val2 <= _val)) {
+            this->*field += other_child->*field;
+        }
+    }
+    else {
+        this->*field = child->*field;
+    }
+}
+
+void Tree::_swap(Node *a, Node *b) {
+    _splay(a);
+    a->_right->_parent = nullptr;
+    a->_right = nullptr;
+    a->_update();
+    _splay(b);
+    Node* a_left = a->_left;
+    a->_left = b->_left;
+    a->_right = b->_right;
+    b->_left = a_left;
+    b->_right = a;
+    a->_update();
+    b->_update();
+    _root = b;
 }

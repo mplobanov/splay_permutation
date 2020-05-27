@@ -78,7 +78,7 @@ public:
     std::tuple<Tree*, Tree*, Tree*> get_subsegemnt(int l, int r);
     void merge_subsegments(Tree* n2, Tree* n3);
 
-    void _make_changes(int l, int r, std::function<void(Tree*)>);
+    void _make_changes(int l, int r, std::function<void(Tree *)> tree);
 
 public:
     int size() const;

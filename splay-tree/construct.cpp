@@ -4,7 +4,13 @@
 //
 #include "Tree.h"
 
-Tree::Node::Node(int val) : _val(val) {}
+Tree::Node::Node(int val) : _val(val) {
+    incPref = 1;
+    incSuff = 1;
+    decPref = 1;
+    decSuff = 1;
+    _update();
+}
 
 Tree::Node::Node(Node *left, int val, Node *right) : _left(left), _val(val), _right(right) {
     _update();
